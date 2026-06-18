@@ -1,29 +1,41 @@
-
 //------ Configuracion ------
-let AMP_MIN = 0.10; //UNBRAL MINIMO DE SONIDO QUE SUPERA AL RUIDO DE FONDO
-let AMP_MAX = 0.90; //AMPLITEUD MAXIMA DEL SONIDO
-let AMORTIGUACION = 0.9;
+let AMP_MIN = 0.08; 
+let AMP_MAX = 0.4; 
+let AMORTIGUACION = 0.5;
 
-let FREC_MIN = 50;
-let FREC_MAX = 80;
-
-let IMRPIMIR = false;
-
-// --------------------------------------------
+let FREC_MIN = 700;   
+let FREC_MAX = 882;
+let IMPRIMIR = false;
 
 
+const model_url = 'https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/';
 let pitch;
 let audioContext;
+let mic;
+
+let estado = "velocidad";
 
 
-//const model_url = 'https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/';
+let marca;
+let tiempoLimiteVelocidad = 7000;
+let tiempoLimieteLento = 7000;
+let tiempoLimieteReiniciar = 7000;
+let tiempoLimieteAvanzar = 7000;
+let tiempoLimieteColor = 7000;
+let tiempoLimieteFin = 7000;
+
+
 
 let caminante =[];
 let escalaNoise;
 
-// ----------- PALETA DE COLORES ----------- //
-let p; //Paleta 1
-let img; //imagen paleta 1
+
+
+// Paleta
+let p; 
+let p2;
+let img; 
+let img2;
 
 let elColor;
 let colorInicial;
@@ -31,38 +43,40 @@ let colorFinal;
 
 
 
-//------ MICROFONO ------
-let mic;
+
 
 //------ AMPLITUD ------
-let amp; //variable para cargar la amplitud
+let amp; 
 let haySonido = false;
-let antesHabiaSonido = false; //memoria del estado "haySonido" un fotograma atras
+let antesHabiaSonido = false; 
 
 //------ GESTOR ------
 let gestorAmp;
-//let gestorPitch;
+let gestorPitch;
+                                                                                     
 
-//------ ESTADOS ------
+let activo = false; 
 
-
-//------
 
 function preload() {
-  img = loadImage("img/imagen.jpg");
-  img2 = loadImage("img/p2.jpg");
+  img = loadImage("img/obra_1.jpg");
+  img2 = loadImage("img/obra_4.jpg");
+
 }
 
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  background(225);
-
+   background(0);
+   fill(255)
+  
   p = new Paleta(img);
   p2 = new Paleta(img2);
+
   
   for (let i = 0; i < 10; i++) {
     caminante[i] = new Caminante(p.darUnColor());
+
   }
 
 
@@ -77,10 +91,14 @@ function setup() {
 
   userStartAudio();
    audioContext = getAudioContext();
+
   mic.start(startPitch);
 }
 
 function draw() {
+  
+texto = 'Estado: ' + estado;
+  text(texto, 20, 20);
   gestorAmp.actualizar(mic.getLevel());
 
   amp = gestorAmp.filtrada;
@@ -89,28 +107,131 @@ function draw() {
  let empezoElSonido = haySonido && !antesHabiaSonido; //EVENTO
  let finDelSonido = !haySonido && antesHabiaSonido;
  
+
+if(estado == "velocidad") {
  
 
+  if (empezoElSonido) {
 
+  }
 
   if (haySonido) {
-     for (let i = 0; i < 10; i++) {
-      caminante[i].actualizar(amp);
-      caminante[i].dibujar();
-      caminante[i].mover();
-      caminante[i].comprobarLimites();
+    
+for (let i = 0; i < 10; i++) {
+     caminante[i].actualizar(gestorPitch.filtrada);
+     caminante[i].dibujar();
+     caminante[i].mover();
+     caminante[i].comprobarLimites();
     }
   }
-  
+
+  if (finDelSonido) {
+   marca = millis();
+  }
+
+  if (!haySonido) {
+  let ahora = millis();
+  if(ahora > marca + tiempoLimiteVelocidad) {
+
+    estado = "lento";
+    marca = millis();
+  }
+  }
+
+ } else if (estado == "lento") {
+
+  if (empezoElSonido) {
+
+  }
+
+  if (haySonido) {
+for (let i = 0; i < 10; i++) {
+     caminante[i].actualizarLento(gestorPitch.filtrada);
+     caminante[i].dibujar();
+    caminante[i].mover();
+    caminante[i].comprobarLimites();
+    }
+  }
+
+  if (finDelSonido) {
+   marca = millis();
+  }
+
+  if (!haySonido) { 
+  let ahora = millis();
+  if(ahora > marca + tiempoLimieteLento ) {
+
+    estado = "color";
+    marca = millis();
+  }
+  }
+
+ } else if (estado == "avanzar") {
+   
+ } else if (estado == "color") {
+
+      if (empezoElSonido) { 
+          for (let i = 0; i < 10; i++) {
+    caminante[i] = new Caminante(p2.darUnColor());
+
+  }
+      }
+
+      if (haySonido) { 
+          for (let i = 0; i < 10; i++) {
+              caminante[i].actualizar(gestorPitch.filtrada); 
+              caminante[i].dibujar();
+              caminante[i].mover();
+              caminante[i].comprobarLimites();
+          }
+      }
+
+ 
+      if (finDelSonido) { 
+          marca = millis();
+      }
+
+
+      if (!haySonido) { 
+          let ahora = millis();
+          if (ahora > marca + tiempoLimieteColor) { 
+              estado = "fin"; 
+              marca = millis();
+          }
+      }
+
+  } else if (estado == "fin") {
+      
+
+      if (empezoElSonido) { 
+          estado = "reiniciar"; 
+      }
+
+  } else if (estado == "reiniciar") {
+      
+      background(0); 
+
+      caminante = []; 
+      
+      for (let i = 0; i < 10; i++) {
+          caminante[i] = new Caminante(p.darUnColor()); 
+      }
+      
+      estado = "velocidad";
+      marca = millis();
+
+  } 
+console.log(estado)
+ 
  
   
-   if (IMRPIMIR) {
+   if (IMPRIMIR) {
     printData();
   }
   
-  antesHabiaSonido = haySonido; //guardo el estado anterior del fotograma
-}
+  antesHabiaSonido = haySonido; 
 
+}
 
 //------------------------ SONIDO ------------------------
 function printData() {
@@ -126,8 +247,19 @@ function printData() {
   texto = 'amplitud: ' + amp;
   text(texto, 20, 20);
 
+
+  let textoFrecMin = 'Frecuencia Mínima: ' + FREC_MIN + ' Hz';
+  text(textoFrecMin, 20, 40);
+
+
+  let textoFrecMax = 'Frecuencia Máxima: ' + FREC_MAX + ' Hz';
+  text(textoFrecMax, 20, 60);
+
+
+
   fill(0);
   ellipse(width/2, height-amp * 1000, 30, 30);
+  
   pop();
   
   strokeWeight(1);
@@ -151,31 +283,26 @@ function modelLoaded() {
 
 function getPitch() {
   pitch.getPitch(function(err, frequency) {
-    if (frequency) {
+
+    if (frequency && haySonido) { 
       gestorPitch.actualizar(frequency);
+      console.log(frequency);
+    } else {
+
+      gestorPitch.actualizar(FREC_MIN); 
     }
-    // Pequeña pausa antes de volver a pedir pitch
-    setTimeout(getPitch, 50); // 50ms de respiro
+    
+  
+    setTimeout(getPitch); 
   });
 }
 
 function keyPressed() {
-  if (key == ' ') {
-    background(225);
-    for (let i = 0; i < 10; i++) {
-      caminante[i] = new Caminante(p.darUnColor());
-    }
+  
+
+  if (key == 'o' || key == 'O') {
+    background(255);
+      IMPRIMIR = !IMPRIMIR;
   }
 
-  if (key == 'v') {
-    for (let i = 0; i < 10; i++) {
-      caminante [i].vel +=1 ;
-    }
-  }
-
-  if (key == 'a') {
-    for (let i = 0; i < 10; i++) {
-      caminante [i].t +=4 ;
-    }
-  }
 }
