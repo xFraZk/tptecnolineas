@@ -13,12 +13,14 @@ class Caminante{
     
     //-----------------------------------------------------------------
     
-    actualizar(amplitud) {
-      
-    this.vel = map(amplitud, AMP_MIN, AMP_MAX, 2, 20); //Mapeamos la entrada de velocidad
-    
-    
+    actualizar(pitch) {
+this.vel = map(pitch, 0, 1, 2, 20);
     }
+
+    actualizarLento(pitch) {
+    this.vel = map(pitch, 0, 1, 0.5, 3); 
+    }
+
 
 
     //-----------------------------------------------------------------
@@ -56,3 +58,4 @@ class Caminante{
         }
     }
 }
+
