@@ -469,3 +469,4 @@ let barraPitch = map(gestorPitch.filtrada, FREC_MIN, FREC_MAX, 0, 150);
   pop();
 }
 
+
