@@ -1,9 +1,13 @@
 //------ Configuracion ------
-let AMP_MIN = 0.08; 
-let AMP_MAX = 0.4; 
+
+let frecuenciaSimulada = 780;
+let usarTeclado = false;
+
+let AMP_MIN = 0.08;
+let AMP_MAX = 0.4;
 let AMORTIGUACION = 0.5;
 
-let FREC_MIN = 700;   
+let FREC_MIN = 700;
 let FREC_MAX = 882;
 let IMPRIMIR = false;
 
@@ -17,25 +21,37 @@ let estado = "velocidad";
 
 
 let marca;
-let tiempoLimiteVelocidad = 7000;
-let tiempoLimieteLento = 7000;
-let tiempoLimieteReiniciar = 7000;
-let tiempoLimieteAvanzar = 7000;
-let tiempoLimieteColor = 7000;
-let tiempoLimieteFin = 7000;
+let tiempoLimiteVelocidad = 3000;
+let tiempoLimieteLento = 3000;
+let tiempoLimieteReiniciar = 3000;
+let tiempoLimieteAvanzar = 3000;
+let tiempoLimieteColor = 3000;
+let tiempoLimieteFin = 3000;
 
 
 
-let caminante =[];
+let caminante = [];
 let escalaNoise;
 
 
-
 // Paleta
-let p; 
+let p;
 let p2;
-let img; 
+let p3;
+let p4;
+
+let img;
 let img2;
+let img3;
+let img4;
+
+let fondoNegro;
+let fondoVioleta;
+let fondoCrema;
+let fondoGris;
+let colorFondo;
+
+let colores = [];
 
 let elColor;
 let colorInicial;
@@ -46,200 +62,282 @@ let colorFinal;
 
 
 //------ AMPLITUD ------
-let amp; 
+let amp;
 let haySonido = false;
-let antesHabiaSonido = false; 
+let antesHabiaSonido = false;
 
 //------ GESTOR ------
 let gestorAmp;
 let gestorPitch;
-                                                                                     
 
-let activo = false; 
+
+let activo = false;
 
 
 function preload() {
-  img = loadImage("img/obra_1.jpg");
-  img2 = loadImage("img/obra_4.jpg");
-
+  img = loadImage("img/linea_FVioleta.png");
+  img2 = loadImage("img/linea_FNegro.png");
+  img3 = loadImage("img/linea_FCrema.png");
+  img4 = loadImage("img/linea_FGris.png");
 }
 
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-   background(0);
-   fill(255)
+
+  fondoCrema = color(242, 209, 148);
+  fondoVioleta = color(166, 96, 141);
+  fondoNegro = color(64, 58, 54);
+  fondoGris = color(189, 191, 176);
+
+  colores = [fondoCrema, fondoVioleta, fondoNegro, fondoGris];
+  colorFondo = random(colores);
   
+  background(colorFondo);
+  fill(255);
+
   p = new Paleta(img);
   p2 = new Paleta(img2);
+  p3 = new Paleta(img3);
+  p4 = new Paleta(img4);
 
-  
-  for (let i = 0; i < 10; i++) {
-    caminante[i] = new Caminante(p.darUnColor());
-
+  if (colorFondo == fondoVioleta) {
+    for (let i = 0; i < 10; i++) {
+      caminante[i] = new Caminante(p.darUnColor());
+    }
+  }
+  if (colorFondo == fondoNegro) {
+    for (let i = 0; i < 10; i++) {
+      caminante[i] = new Caminante(p2.darUnColor());
+    }
+  }
+  if (colorFondo == fondoCrema) {
+    for (let i = 0; i < 10; i++) {
+      caminante[i] = new Caminante(p3.darUnColor());
+    }
+  }
+  if (colorFondo == fondoGris) {
+    for (let i = 0; i < 10; i++) {
+      caminante[i] = new Caminante(p4.darUnColor());
+    }
   }
 
 
-   //------ GESTOR ------
-   gestorAmp = new GestorSenial(AMP_MIN, AMP_MAX);
-   gestorAmp.f = AMORTIGUACION;
-   gestorPitch = new GestorSenial(FREC_MIN, FREC_MAX);
-   
-   
-  //------ MICROFONO ------
-  mic = new p5.AudioIn();
+  //------ GESTOR ------
+  gestorAmp = new GestorSenial(AMP_MIN, AMP_MAX);
+  gestorAmp.f = AMORTIGUACION;
+  gestorPitch = new GestorSenial(FREC_MIN, FREC_MAX);
 
-  userStartAudio();
+
+  //------ MICROFONO ------
+   mic = new p5.AudioIn();
+
+   userStartAudio();
    audioContext = getAudioContext();
 
-  mic.start(startPitch);
+   mic.start(startPitch);
 }
 
 function draw() {
-  
-texto = 'Estado: ' + estado;
-  text(texto, 20, 20);
   gestorAmp.actualizar(mic.getLevel());
 
   amp = gestorAmp.filtrada;
   haySonido = amp > AMP_MIN;
 
- let empezoElSonido = haySonido && !antesHabiaSonido; //EVENTO
- let finDelSonido = !haySonido && antesHabiaSonido;
- 
+if (usarTeclado) {
 
-if(estado == "velocidad") {
- 
+  gestorPitch.actualizar(frecuenciaSimulada);
 
-  if (empezoElSonido) {
-
+  if (keyIsDown(32)) { // ESPACIO
+    haySonido = true;
+    amp = 0.3;
+  } else {
+    haySonido = false;
+    amp = 0;
   }
 
-  if (haySonido) {
-    
-for (let i = 0; i < 10; i++) {
-     caminante[i].actualizar(gestorPitch.filtrada);
-     caminante[i].dibujar();
-     caminante[i].mover();
-     caminante[i].comprobarLimites();
+} else {
+
+  gestorAmp.actualizar(mic.getLevel());
+
+  amp = gestorAmp.filtrada;
+  haySonido = amp > AMP_MIN;
+}
+
+
+  let empezoElSonido = haySonido && !antesHabiaSonido; //EVENTO
+  let finDelSonido = !haySonido && antesHabiaSonido;
+
+
+  if (estado == "velocidad") {
+
+
+    if (empezoElSonido) {
+
     }
-  }
 
-  if (finDelSonido) {
-   marca = millis();
-  }
+    if (haySonido) {
 
-  if (!haySonido) {
-  let ahora = millis();
-  if(ahora > marca + tiempoLimiteVelocidad) {
-
-    estado = "lento";
-    marca = millis();
-  }
-  }
-
- } else if (estado == "lento") {
-
-  if (empezoElSonido) {
-
-  }
-
-  if (haySonido) {
-for (let i = 0; i < 10; i++) {
-     caminante[i].actualizarLento(gestorPitch.filtrada);
-     caminante[i].dibujar();
-    caminante[i].mover();
-    caminante[i].comprobarLimites();
+      for (let i = 0; i < 10; i++) {
+        caminante[i].actualizar(gestorPitch.filtrada);
+        caminante[i].dibujar();
+        caminante[i].mover();
+        caminante[i].comprobarLimites();
+      }
     }
-  }
 
-  if (finDelSonido) {
-   marca = millis();
-  }
+    if (finDelSonido) {
+      marca = millis();
+    }
 
-  if (!haySonido) { 
-  let ahora = millis();
-  if(ahora > marca + tiempoLimieteLento ) {
+    if (!haySonido) {
+      let ahora = millis();
+      if (ahora > marca + tiempoLimiteVelocidad) {
 
-    estado = "color";
-    marca = millis();
-  }
-  }
-
- } else if (estado == "avanzar") {
-   
- } else if (estado == "color") {
-
-      if (empezoElSonido) { 
-          for (let i = 0; i < 10; i++) {
-    caminante[i] = new Caminante(p2.darUnColor());
-
-  }
+        estado = "lento";
+        marca = millis();
       }
+    }
 
-      if (haySonido) { 
-          for (let i = 0; i < 10; i++) {
-              caminante[i].actualizar(gestorPitch.filtrada); 
-              caminante[i].dibujar();
-              caminante[i].mover();
-              caminante[i].comprobarLimites();
-          }
+  } else if (estado == "lento") {
+
+    if (empezoElSonido) {
+
+    }
+
+    if (haySonido) {
+      for (let i = 0; i < 10; i++) {
+        caminante[i].actualizarLento(gestorPitch.filtrada);
+        caminante[i].dibujar();
+        caminante[i].mover();
+        caminante[i].comprobarLimites();
       }
+    }
 
- 
-      if (finDelSonido) { 
-          marca = millis();
+    if (finDelSonido) {
+      marca = millis();
+    }
+
+    if (!haySonido) {
+      let ahora = millis();
+      if (ahora > marca + tiempoLimieteLento) {
+
+        estado = "color";
+        marca = millis();
       }
+    }
 
+  } else if (estado == "avanzar") {
 
-      if (!haySonido) { 
-          let ahora = millis();
-          if (ahora > marca + tiempoLimieteColor) { 
-              estado = "fin"; 
-              marca = millis();
-          }
+  } else if (estado == "color") {
+
+    if (empezoElSonido) {
+      if (colorFondo == fondoVioleta) {
+        for (let i = 0; i < 10; i++) {
+          caminante[i] = new Caminante(p.darUnColor());
+        }
       }
+      if (colorFondo == fondoNegro) {
+        for (let i = 0; i < 10; i++) {
+          caminante[i] = new Caminante(p2.darUnColor());
+        }
+      }
+      if (colorFondo == fondoCrema) {
+        for (let i = 0; i < 10; i++) {
+          caminante[i] = new Caminante(p3.darUnColor());
+        }
+      }
+      if (colorFondo == fondoGris) {
+        for (let i = 0; i < 10; i++) {
+          caminante[i] = new Caminante(p4.darUnColor());
+        }
+      }
+    }
+
+    if (haySonido) {
+      for (let i = 0; i < 10; i++) {
+        caminante[i].actualizar(gestorPitch.filtrada);
+        caminante[i].dibujar();
+        caminante[i].mover();
+        caminante[i].comprobarLimites();
+      }
+    }
+
+
+    if (finDelSonido) {
+      marca = millis();
+    }
+
+
+    if (!haySonido) {
+      let ahora = millis();
+      if (ahora > marca + tiempoLimieteColor) {
+        estado = "fin";
+        marca = millis();
+      }
+    }
 
   } else if (estado == "fin") {
-      
 
-      if (empezoElSonido) { 
-          estado = "reiniciar"; 
-      }
+
+    if (empezoElSonido) {
+      estado = "reiniciar";
+    }
 
   } else if (estado == "reiniciar") {
-      
-      background(0); 
 
-      caminante = []; 
-      
+    colorFondo = random(colores);
+    background(colorFondo);
+
+    caminante = [];
+
+    if (colorFondo == fondoVioleta) {
       for (let i = 0; i < 10; i++) {
-          caminante[i] = new Caminante(p.darUnColor()); 
+        caminante[i] = new Caminante(p.darUnColor());
       }
-      
-      estado = "velocidad";
-      marca = millis();
+    }
+    if (colorFondo == fondoNegro) {
+      for (let i = 0; i < 10; i++) {
+        caminante[i] = new Caminante(p2.darUnColor());
+      }
+    }
+    if (colorFondo == fondoCrema) {
+      for (let i = 0; i < 10; i++) {
+        caminante[i] = new Caminante(p3.darUnColor());
+      }
+    }
+    if (colorFondo == fondoGris) {
+      for (let i = 0; i < 10; i++) {
+        caminante[i] = new Caminante(p4.darUnColor());
+      }
+    }
 
-  } 
-console.log(estado)
- 
- 
-  
-   if (IMPRIMIR) {
+    estado = "velocidad";
+    marca = millis();
+
+  }
+  console.log(estado)
+
+
+
+  if (IMPRIMIR) {
     printData();
   }
-  
-  antesHabiaSonido = haySonido; 
+
+  antesHabiaSonido = haySonido;
+
+
+dibujarPanel();
 
 }
 
 //------------------------ SONIDO ------------------------
 function printData() {
- background(255);
-  
-    push();
-   
-    noStroke();
+  background(255);
+
+  push();
+
+  noStroke();
   textSize(16);
   fill(0);
   let texto;
@@ -258,23 +356,19 @@ function printData() {
 
 
   fill(0);
-  ellipse(width/2, height-amp * 1000, 30, 30);
-  
+  ellipse(width / 2, height - amp * 1000, 30, 30);
+
   pop();
-  
+
   strokeWeight(1);
   gestorAmp.dibujar(100, 500);
   gestorPitch.dibujar(100, 300);
 }
 
-
-
-
-
 //------------------------ Pitch ------------------------
 
 function startPitch() {
-  pitch = ml5.pitchDetection(model_url, audioContext , mic.stream, modelLoaded);
+  pitch = ml5.pitchDetection(model_url, audioContext, mic.stream, modelLoaded);
 }
 
 function modelLoaded() {
@@ -282,27 +376,96 @@ function modelLoaded() {
 }
 
 function getPitch() {
-  pitch.getPitch(function(err, frequency) {
+  pitch.getPitch(function (err, frequency) {
 
-    if (frequency && haySonido) { 
+    if (frequency && haySonido) {
       gestorPitch.actualizar(frequency);
       console.log(frequency);
     } else {
 
-      gestorPitch.actualizar(FREC_MIN); 
+      gestorPitch.actualizar(FREC_MIN);
     }
-    
-  
-    setTimeout(getPitch); 
+
+
+    setTimeout(getPitch);
   });
 }
 
+// function keyPressed() {
+
+
+//   if (key == 'o' || key == 'O') {
+//     background(255);
+//     IMPRIMIR = !IMPRIMIR;
+//   }
+
+// }
 function keyPressed() {
-  
+
+  if (keyCode === UP_ARROW) {
+    frecuenciaSimulada += 20;
+  }
+
+  if (keyCode === DOWN_ARROW) {
+    frecuenciaSimulada -= 20;
+  }
+
+  frecuenciaSimulada = constrain(
+    frecuenciaSimulada,
+    FREC_MIN,
+    FREC_MAX
+  );
+
+  console.log("Frecuencia:", frecuenciaSimulada);
 
   if (key == 'o' || key == 'O') {
     background(255);
-      IMPRIMIR = !IMPRIMIR;
+    IMPRIMIR = !IMPRIMIR;
   }
-
 }
+
+function dibujarPanel() {
+
+  push();
+
+  // Fondo del panel
+  noStroke();
+  fill(0, 170);
+  rect(15, 15, 190, 95, 8);
+
+  // Texto
+  fill(255);
+  textSize(14);
+  textAlign(LEFT, TOP);
+
+ text("Frecuencia: " + nf(gestorPitch.filtrada, 0, 1) + " Hz", 25, 30);
+
+  text("Frecuencia: " + nf(frecuenciaSimulada, 0, 1) + " Hz", 25, 30);
+
+
+  text("Amplitud: " + nf(amp, 1, 3), 25, 55);
+
+
+  text("Estado: " + estado, 25, 85);
+
+  // Barras
+let barraPitch = map(gestorPitch.filtrada, FREC_MIN, FREC_MAX, 0, 150);
+//let barraPitch = map(frecuenciaSimulada, FREC_MIN, FREC_MAX, 0, 150);
+
+
+  barraPitch = constrain(barraPitch, 0, 150);
+
+  let barraAmp = map(amp, AMP_MIN, AMP_MAX, 0, 150);
+  barraAmp = constrain(barraAmp, 0, 150);
+
+  // Frecuencia
+  fill(80, 180, 255);
+  rect(25, 47, barraPitch, 6);
+
+  // Amplitud
+  fill(120, 255, 120);
+  rect(25, 72, barraAmp, 6);
+
+  pop();
+}
+
